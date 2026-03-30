@@ -112,7 +112,7 @@
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       cursor: default;
-      word-wrap: break-word; /* Предотвращение вылезания длинных русских слов */
+      word-wrap: break-word;
     }
 
     /* Noise overlay */
@@ -365,7 +365,7 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
       transition: all var(--transition);
-      min-height: 54px; /* Touch friendly */
+      min-height: 54px;
       text-align: center;
       width: fit-content;
     }
@@ -503,7 +503,7 @@
       text-align: center;
     }
 
-    /* ===== MULTIPLIER ===== */
+    /* ===== MULTIPLIER & GRAPH QUEEN ===== */
     .multiplier-section {
       padding: 80px 0;
       position: relative;
@@ -610,6 +610,19 @@
 
     .mult-graph svg { width: 100%; height: 100%; }
 
+    /* Анимация и стили для картинки на графике */
+    .graph-queen {
+      position: absolute;
+      width: 60px;
+      height: auto;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      filter: drop-shadow(0 0 10px var(--neon-pink));
+      transition: left 0.05s linear, top 0.05s linear, transform 0.5s ease, filter 0.5s ease;
+      pointer-events: none;
+      display: none;
+    }
+
     .mult-history {
       display: flex;
       gap: 8px;
@@ -695,7 +708,7 @@
       letter-spacing: 0.05em;
       text-transform: uppercase;
       transition: all var(--transition);
-      min-height: 48px; /* Touch target size */
+      min-height: 48px;
     }
 
     .bet-btn-place {
@@ -1252,7 +1265,11 @@
     /* ===== RESPONSIVE ===== */
     @media (max-width: 1024px) {
       .hero-inner { grid-template-columns: 1fr; text-align: center; }
-      .hero-visual { display: none; }
+      
+      /* Изменено для отображения картинки на телефонах/планшетах */
+      .hero-visual { display: flex; margin-top: 30px; }
+      .queen-wrapper { max-width: 300px; margin: 0 auto; }
+      
       .hero-stats { justify-content: center; }
       .hero-actions { justify-content: center; }
       .hero-subtitle { margin: 0 auto 36px; }
@@ -1263,6 +1280,7 @@
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .hero { padding: 90px 0 100px; }
+      .queen-wrapper { max-width: 250px; }
       .mult-controls { grid-template-columns: 1fr; }
       .features-grid { grid-template-columns: 1fr; }
       .footer-grid { grid-template-columns: 1fr; gap: 32px; text-align: center; }
@@ -1272,6 +1290,9 @@
       .sticky-cta { display: block; }
       body { padding-bottom: 80px; }
       
+      /* Размер королевы на графике для мобильных */
+      .graph-queen { width: 45px; }
+
       .btn-primary, .btn-secondary, .calc-run-btn {
         width: 100%;
         display: flex;
@@ -1291,7 +1312,7 @@
 
     /* High density display optimization */
     @media (-webkit-min-device-pixel-ratio: 3), (min-resolution: 3dppx) {
-      .queen-img-container img { image-rendering: -webkit-optimize-contrast; }
+      .queen-img-container img, .graph-queen { image-rendering: -webkit-optimize-contrast; }
     }
 
     /* Reduced motion */
@@ -1437,7 +1458,7 @@
           <div class="mult-status live" id="multStatus" aria-live="polite">● ПОЛЕТ</div>
         </div>
 
-        <div class="mult-graph" aria-label="График множителя" role="img">
+        <div class="mult-graph" aria-label="График множителя" role="img" style="position: relative;">
           <svg id="multGraph" viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <linearGradient id="curveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -1448,6 +1469,8 @@
             <path id="graphArea" fill="url(#curveGrad)" d="M0,120 L0,120 Z"/>
             <path id="graphLine" fill="none" stroke="var(--gold)" stroke-width="2" d="M0,120"/>
           </svg>
+          
+          <img src="queen.png" id="graphQueen" class="graph-queen" alt="Rocket Queen in flight" aria-hidden="true" onerror="this.style.display='none';">
         </div>
 
         <div class="mult-history" id="multHistory" aria-label="История раундов Рокет Квин" role="list">
@@ -1967,6 +1990,7 @@
     const graphLineEl = document.getElementById('graphLine');
     const graphAreaEl = document.getElementById('graphArea');
     const historyEl = document.getElementById('multHistory');
+    const graphQueenEl = document.getElementById('graphQueen');
 
     let animFrame, currentMult = 1.0, speed = 0.015, elapsed = 0;
     let isCrashed = false, crashPoint = 0, betPlaced = false;
@@ -1995,6 +2019,13 @@
 
         const areaD = `M0,${graphH} ${graphPoints.map(p => `L${p[0]},${p[1]}`).join(' ')} L${graphPoints[graphPoints.length-1][0]},${graphH} Z`;
         graphAreaEl.setAttribute('d', areaD);
+      }
+      
+      // Анимация картинки королевы на графике
+      if(graphQueenEl) {
+        graphQueenEl.style.display = 'block';
+        graphQueenEl.style.left = `${(x / graphW) * 100}%`;
+        graphQueenEl.style.top = `${(y / graphH) * 100}%`;
       }
     }
 
@@ -2032,6 +2063,11 @@
       multStatusEl.className = 'mult-status crashed';
       multValueEl.textContent = currentMult.toFixed(2);
 
+      if(graphQueenEl) {
+        graphQueenEl.style.filter = 'grayscale(100%) opacity(0.5)';
+        graphQueenEl.style.transform = 'translate(-50%, -50%) rotate(45deg) scale(0.8)';
+      }
+
       addHistoryChip(currentMult);
       setTimeout(resetRound, 3000);
     }
@@ -2053,6 +2089,13 @@
       graphAreaEl.setAttribute('d', `M0,${graphH} L0,${graphH} Z`);
       isCrashed = false;
       crashPoint = generateCrashPoint();
+      
+      if(graphQueenEl) {
+        graphQueenEl.style.display = 'none';
+        graphQueenEl.style.filter = 'drop-shadow(0 0 10px var(--neon-pink))';
+        graphQueenEl.style.transform = 'translate(-50%, -50%) rotate(0deg) scale(1)';
+      }
+
       multValueEl.classList.remove('crashed');
       multValueEl.classList.add('rising');
       multStatusEl.textContent = '● ПОЛЕТ';
